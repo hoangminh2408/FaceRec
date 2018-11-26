@@ -30,41 +30,66 @@ def main(args):
         raise ValueError("Unimplemented mode")
 '''
 Description:
-Images from Video Capture -> detect faces' regions -> crop those faces and align them 
-    -> each cropped face is categorized in 3 types: Center, Left, Right 
+Images from Video Capture -> detect faces' regions -> crop those faces and align them
+    -> each cropped face is categorized in 3 types: Center, Left, Right
     -> Extract 128D vectors( face features)
-    -> Search for matching subjects in the dataset based on the types of face positions. 
+    -> Search for matching subjects in the dataset based on the types of face positions.
     -> The preexisitng face 128D vector with the shortest distance to the 128D vector of the face on screen is most likely a match
     (Distance threshold is 0.6, percentage threshold is 70%)
-    
+
 '''
 def camera_recog():
     print("[INFO] camera sensor warming up...")
     vs = cv2.VideoCapture(0); #get input from webcam
-    while True:
-        _,frame = vs.read();
-        #u can certainly add a roi here but for the sake of a demo i'll just leave it as simple as this
-        rects, landmarks = face_detect.detect_face(frame,80);#min face size is set to 80x80
-        aligns = []
-        positions = []
-        for (i, rect) in enumerate(rects):
-            aligned_face, face_pos = aligner.align(160,frame,landmarks[i])
-            if len(aligned_face) == 160 and len(aligned_face[0]) == 160:
-                aligns.append(aligned_face)
-                positions.append(face_pos)
-            else: 
-                print("Align face failed") #log        
-        if(len(aligns) > 0):
-            features_arr = extract_feature.get_features(aligns)
-            recog_data = findPeople(features_arr,positions);
-            for (i,rect) in enumerate(rects):
-                cv2.rectangle(frame,(rect[0],rect[1]),(rect[0] + rect[2],rect[1]+rect[3]),(255,0,0)) #draw bounding box for the face
-                cv2.putText(frame,recog_data[i][0]+" - "+str(recog_data[i][1])+"%",(rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1,cv2.LINE_AA)
-
-        cv2.imshow("Frame",frame)
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord("q"):
-            break
+    toggle = 0
+    framecnt = 0
+    if vs:
+        while True:
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("k"):
+                toggle = 1
+                framecnt = 0
+                print("k pressed")
+            _,frame = vs.read();
+            #u can certainly add a roi here but for the sake of a demo i'll just leave it as simple as this
+            if toggle == 1:
+                rects, landmarks = face_detect.detect_face(frame,85);#min face size is set to 80x80
+                aligns = []
+                positions = []
+                for (i, rect) in enumerate(rects):
+                    aligned_face, face_pos = aligner.align(160,frame,landmarks[i])
+                    if len(aligned_face) == 160 and len(aligned_face[0]) == 160:
+                        aligns.append(aligned_face)
+                        positions.append(face_pos)
+                    else:
+                        print("Align face failed") #log
+                    if(len(aligns) > 0):
+                        features_arr = extract_feature.get_features(aligns)
+                    for (i,rect) in enumerate(rects):
+                        recog_data = findPeople(features_arr,positions);
+                        # cv2.rectangle(frame,(rect[0],rect[1]),(rect[0] + rect[2],rect[1]+rect[3]),(255,0,0)) #draw bounding box for the face
+                        cv2.putText(frame,recog_data[i][0]+" - "+str(recog_data[i][1])+"%",(rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1,cv2.LINE_AA)
+                        if recog_data[i][1] >= 90:
+                            print(recog_data[0][i])
+                            framecnt = 0
+                            toggle = 0
+                        else:
+                            framecnt=framecnt+1
+                            print(framecnt)
+                    if framecnt == 50:
+                        toggle = 0
+                        print("Unknown face!")
+            else:
+                framecnt = framecnt + 1
+                print(framecnt)
+                if framecnt == 200:
+                    toggle = 1
+                    framecnt = 0;
+            cv2.imshow("Frame",frame)
+            if key == ord("q"):
+                break
+    else:
+        print("Camera doesn't work")
 '''
 facerec_128D.txt Data Structure:
 {
@@ -74,10 +99,10 @@ facerec_128D.txt Data Structure:
     "Right": [[128D Vector]]
     }
 }
-This function basically does a simple linear search for 
+This function basically does a simple linear search for
 ^the 128D vector with the min distance to the 128D vector of the face on screen
 '''
-def findPeople(features_arr, positions, thres = 0.6, percent_thres = 70):
+def findPeople(features_arr, positions, thres = 0.6, percent_thres = 85):
     '''
     :param features_arr: a list of 128d Features of all faces on screen
     :param positions: a list of face position types of all faces on screen
@@ -105,19 +130,19 @@ def findPeople(features_arr, positions, thres = 0.6, percent_thres = 70):
 
 '''
 Description:
-User input his/her name or ID -> Images from Video Capture -> detect the face -> crop the face and align it 
-    -> face is then categorized in 3 types: Center, Left, Right 
+User input his/her name or ID -> Images from Video Capture -> detect the face -> crop the face and align it
+    -> face is then categorized in 3 types: Center, Left, Right
     -> Extract 128D vectors( face features)
     -> Append each newly extracted face 128D vector to its corresponding position type (Center, Left, Right)
     -> Press Q to stop capturing
     -> Find the center ( the mean) of those 128D vectors in each category. ( np.mean(...) )
     -> Save
-    
+
 '''
 def create_manual_data():
     vs = cv2.VideoCapture(0); #get input from webcam
-    
-    ("Please input new user ID:")
+
+    print("Please input new user ID:")
     new_name = input(); #ez python input()
     f = open('./facerec_128D.txt','r');
     data_set = json.loads(f.read());
@@ -126,7 +151,7 @@ def create_manual_data():
     print("Please start turning slowly. Press 'q' to save and add this new user to the dataset");
     while True:
         _, frame = vs.read();
-        rects, landmarks = face_detect.detect_face(frame, 80);  # min face size is set to 80x80
+        rects, landmarks = face_detect.detect_face(frame, 85);  # min face size is set to 80x80
         for (i, rect) in enumerate(rects):
             aligned_frame, pos = aligner.align(160,frame,landmarks[i]);
             if len(aligned_frame) == 160 and len(aligned_frame[0]) == 160:
@@ -141,8 +166,6 @@ def create_manual_data():
     data_set[new_name] = person_features;
     f = open('./facerec_128D.txt', 'w');
     f.write(json.dumps(data_set))
-
-
 
 
 
