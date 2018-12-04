@@ -41,7 +41,7 @@ Images from Video Capture -> detect faces' regions -> crop those faces and align
 def camera_recog():
     print("[INFO] camera sensor warming up...")
     vs = cv2.VideoCapture(0); #get input from webcam
-    toggle = 0
+    toggle = 1
     framecnt = 0
     if vs:
         while True:
@@ -68,8 +68,12 @@ def camera_recog():
                     for (i,rect) in enumerate(rects):
                         recog_data = findPeople(features_arr,positions);
                         # cv2.rectangle(frame,(rect[0],rect[1]),(rect[0] + rect[2],rect[1]+rect[3]),(255,0,0)) #draw bounding box for the face
-                        cv2.putText(frame,recog_data[i][0]+" - "+str(recog_data[i][1])+"%",(rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1,cv2.LINE_AA)
-                        if recog_data[i][1] >= 90:
+                        # cv2.putText(frame,recog_data[i][0]+" - "+str(recog_data[i][1])+"%",(rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1,cv2.LINE_AA)
+                        if len(recog_data) > 1:
+                            print("More than one person")
+                            framecnt = 0
+                            toggle = 0
+                        elif recog_data[0][1] >= 90:
                             print(recog_data[0][i])
                             framecnt = 0
                             toggle = 0
@@ -81,7 +85,7 @@ def camera_recog():
                         print("Unknown face!")
             else:
                 framecnt = framecnt + 1
-                print(framecnt)
+                #print(framecnt)
                 if framecnt == 200:
                     toggle = 1
                     framecnt = 0;
