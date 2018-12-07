@@ -73,16 +73,19 @@ def camera_recog():
                             print("More than one person")
                             framecnt = 0
                             toggle = 0
+                            return "More than one person"
                         elif recog_data[0][1] >= 90:
                             print(recog_data[0][i])
                             framecnt = 0
                             toggle = 0
+                            return recog_data[0][i]
                         else:
                             framecnt=framecnt+1
                             print(framecnt)
                     if framecnt == 50:
                         toggle = 0
                         print("Unknown face!")
+                        return "Unknown"
             else:
                 framecnt = framecnt + 1
                 #print(framecnt)
