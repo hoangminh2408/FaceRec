@@ -41,57 +41,55 @@ Images from Video Capture -> detect faces' regions -> crop those faces and align
 def camera_recog():
     print("[INFO] camera sensor warming up...")
     vs = cv2.VideoCapture(0); #get input from webcam
-    toggle = 1
+    toggle = 0
     framecnt = 0
     if vs:
         while True:
             key = cv2.waitKey(1) & 0xFF
-            if key == ord("k"):
-                toggle = 1
-                framecnt = 0
-                print("k pressed")
             _,frame = vs.read();
+            if key == ord("k"):
+                print("Detecting Face....")
+                toggle = 1
             #u can certainly add a roi here but for the sake of a demo i'll just leave it as simple as this
             if toggle == 1:
                 rects, landmarks = face_detect.detect_face(frame,85);#min face size is set to 80x80
                 aligns = []
                 positions = []
-                for (i, rect) in enumerate(rects):
-                    aligned_face, face_pos = aligner.align(160,frame,landmarks[i])
-                    if len(aligned_face) == 160 and len(aligned_face[0]) == 160:
-                        aligns.append(aligned_face)
-                        positions.append(face_pos)
-                    else:
-                        print("Align face failed") #log
-                    if(len(aligns) > 0):
-                        features_arr = extract_feature.get_features(aligns)
-                    for (i,rect) in enumerate(rects):
-                        recog_data = findPeople(features_arr,positions);
-                        # cv2.rectangle(frame,(rect[0],rect[1]),(rect[0] + rect[2],rect[1]+rect[3]),(255,0,0)) #draw bounding box for the face
-                        # cv2.putText(frame,recog_data[i][0]+" - "+str(recog_data[i][1])+"%",(rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1,cv2.LINE_AA)
-                        if len(recog_data) > 1:
-                            print("More than one person")
-                            framecnt = 0
-                            toggle = 0
-                            return "More than one person"
-                        elif recog_data[0][1] >= 90:
-                            print(recog_data[0][i])
-                            framecnt = 0
-                            toggle = 0
-                            return recog_data[0][i]
+                if len(rects) == 0:
+                    print("No Face Detected")
+                    toggle = 0
+                else:
+                    print("Recognizing Face...")
+                    for (i, rect) in enumerate(rects):
+                        aligned_face, face_pos = aligner.align(160,frame,landmarks[i])
+                        if len(aligned_face) == 160 and len(aligned_face[0]) == 160:
+                            aligns.append(aligned_face)
+                            positions.append(face_pos)
                         else:
-                            framecnt=framecnt+1
-                            print(framecnt)
-                    if framecnt == 25:
-                        toggle = 0
-                        print("Unknown face!")
-                        return "Unknown"
-            else:
-                framecnt = framecnt + 1
-                #print(framecnt)
-                if framecnt == 1000:
-                    toggle = 1
-                    framecnt = 0;
+                            print("Align face failed") #log
+                        if(len(aligns) > 0):
+                            features_arr = extract_feature.get_features(aligns)
+                        for (i,rect) in enumerate(rects):
+                            recog_data = findPeople(features_arr,positions);
+                            # cv2.rectangle(frame,(rect[0],rect[1]),(rect[0] + rect[2],rect[1]+rect[3]),(255,0,0)) #draw bounding box for the face
+                            # cv2.putText(frame,recog_data[i][0]+" - "+str(recog_data[i][1])+"%",(rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1,cv2.LINE_AA)
+                            if len(recog_data) > 1:
+                                print("More than one person")
+                                framecnt = 0
+                                toggle = 0
+                                return "More than one person"
+                            elif recog_data[0][1] >= 90:
+                                print(recog_data[0][i])
+                                framecnt = 0
+                                toggle = 0
+                                return recog_data[0][i]
+                            else:
+                                framecnt=framecnt+1
+                                print(framecnt)
+                        if framecnt == 25:
+                            toggle = 0
+                            print("Unknown face!")
+                            return "Unknown"
             cv2.imshow("Frame",frame)
             if key == ord("q"):
                 break
