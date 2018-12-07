@@ -82,14 +82,14 @@ def camera_recog():
                         else:
                             framecnt=framecnt+1
                             print(framecnt)
-                    if framecnt == 50:
+                    if framecnt == 25:
                         toggle = 0
                         print("Unknown face!")
                         return "Unknown"
             else:
                 framecnt = framecnt + 1
                 #print(framecnt)
-                if framecnt == 200:
+                if framecnt == 1000:
                     toggle = 1
                     framecnt = 0;
             cv2.imshow("Frame",frame)
