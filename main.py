@@ -9,7 +9,7 @@ To input new user:
 main.py --mode "input"
 
 '''
-
+import requests
 import cv2
 from align_custom import AlignCustom
 from face_feature import FaceFeature
@@ -77,11 +77,13 @@ def camera_recog():
                                 print("More than one person")
                                 framecnt = 0
                                 toggle = 0
+                                text_alert("More than one person")
                                 return "More than one person"
                             elif recog_data[0][1] >= 90:
                                 print(recog_data[0][i])
                                 framecnt = 0
                                 toggle = 0
+                                text_alert(recog_data[0][i])
                                 return recog_data[0][i]
                             else:
                                 framecnt=framecnt+1
@@ -89,7 +91,8 @@ def camera_recog():
                         if framecnt == 25:
                             toggle = 0
                             print("Unknown face!")
-                            return "Unknown"
+                            text_alert("Unknown")
+                            return("Unknown")
             cv2.imshow("Frame",frame)
             if key == ord("q"):
                 break
@@ -173,6 +176,11 @@ def create_manual_data():
     f.write(json.dumps(data_set))
 
 
+
+def text_alert(whoisit):
+    report = {}
+    report["value1"] = whoisit
+    requests.post("https://maker.ifttt.com/trigger/motion_detected/with/key/oOZxJ6O6nLgtIm6l2iwGD1j85_81X95kYsTMJM0Z-bW", data=report)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
