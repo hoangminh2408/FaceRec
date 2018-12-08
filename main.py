@@ -18,6 +18,7 @@ from tf_graph import FaceRecGraph
 import argparse
 import sys
 import json
+import time
 import numpy as np
 
 TIMEOUT = 10 #10 seconds
@@ -43,7 +44,6 @@ Images from Video Capture -> detect faces' regions -> crop those faces and align
 def camera_recog():
     print("[INFO] camera sensor warming up...")
     vs = cv2.VideoCapture(0); #get input from webcam
-
     toggle = 0
     framecnt = 0
     if vs:
