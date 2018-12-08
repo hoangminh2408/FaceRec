@@ -20,6 +20,8 @@ import sys
 import json
 import numpy as np
 
+TIMEOUT = 10 #10 seconds
+
 def main(args):
     mode = args.mode
     if(mode == "camera"):
@@ -41,6 +43,7 @@ Images from Video Capture -> detect faces' regions -> crop those faces and align
 def camera_recog():
     print("[INFO] camera sensor warming up...")
     vs = cv2.VideoCapture(0); #get input from webcam
+
     toggle = 0
     framecnt = 0
     if vs:
@@ -131,7 +134,7 @@ def findPeople(features_arr, positions, thres = 0.6, percent_thres = 85):
         if percentage <= percent_thres :
             result = "Unknown"
         returnRes.append((result,percentage))
-    return returnRes
+    return returnRes    
 
 '''
 Description:
@@ -158,7 +161,7 @@ def create_manual_data():
         _, frame = vs.read();
         rects, landmarks = face_detect.detect_face(frame, 85);  # min face size is set to 80x80
         for (i, rect) in enumerate(rects):
-            aligned_frame, pos = aligner.align(160,frame,landmarks[i]);
+            aligned_frame, pos = aligner.align(160,frame,landmarks[:,i]);
             if len(aligned_frame) == 160 and len(aligned_frame[0]) == 160:
                 person_imgs[pos].append(aligned_frame)
                 cv2.imshow("Captured face", aligned_frame)
@@ -179,7 +182,8 @@ if __name__ == '__main__':
     parser.add_argument("--mode", type=str, help="Run camera recognition", default="camera")
     args = parser.parse_args(sys.argv[1:]);
     FRGraph = FaceRecGraph();
+    MTCNNGraph = FaceRecGraph();
     aligner = AlignCustom();
     extract_feature = FaceFeature(FRGraph)
-    face_detect = MTCNNDetect(FRGraph, scale_factor=2); #scale_factor, rescales image for faster detection
+    face_detect = MTCNNDetect(MTCNNGraph, scale_factor=2); #scale_factor, rescales image for faster detection
     main(args);
