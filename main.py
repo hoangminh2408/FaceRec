@@ -175,8 +175,6 @@ def create_manual_data():
     f = open('./facerec_128D.txt', 'w');
     f.write(json.dumps(data_set))
 
-
-
 def text_alert(whoisit):
     report = {}
     report["value1"] = whoisit
