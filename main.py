@@ -21,7 +21,6 @@ import json
 import time
 import numpy as np
 
-TIMEOUT = 10 #10 seconds
 
 def main(args):
     mode = args.mode
@@ -46,61 +45,59 @@ def camera_recog():
     vs = cv2.VideoCapture(0); #get input from webcam
     toggle = 0
     framecnt = 0
-    if vs:
-        while True:
-            key = cv2.waitKey(1) & 0xFF
-            _,frame = vs.read();
-            if key == ord("k"):
-                print("Detecting Face....")
-                toggle = 1
-            #u can certainly add a roi here but for the sake of a demo i'll just leave it as simple as this
-            if toggle == 1:
-                rects, landmarks = face_detect.detect_face(frame,85);#min face size is set to 80x80
-                aligns = []
-                positions = []
-                if len(rects) == 0:
-                    print("No Face Detected")
-                    toggle = 0
-                else:
-                    print("Recognizing Face...")
-                    for (i, rect) in enumerate(rects):
-                        aligned_face, face_pos = aligner.align(160,frame,landmarks[i])
-                        if len(aligned_face) == 160 and len(aligned_face[0]) == 160:
-                            aligns.append(aligned_face)
-                            positions.append(face_pos)
-                        else:
-                            print("Align face failed") #log
-                        if(len(aligns) > 0):
-                            features_arr = extract_feature.get_features(aligns)
-                        for (i,rect) in enumerate(rects):
-                            recog_data = findPeople(features_arr,positions);
-                            # cv2.rectangle(frame,(rect[0],rect[1]),(rect[0] + rect[2],rect[1]+rect[3]),(255,0,0)) #draw bounding box for the face
-                            # cv2.putText(frame,recog_data[i][0]+" - "+str(recog_data[i][1])+"%",(rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1,cv2.LINE_AA)
-                            if len(recog_data) > 1:
-                                print("More than one person")
-                                framecnt = 0
-                                toggle = 0
-                                text_alert("More than one person")
-                                return "More than one person"
-                            elif recog_data[0][1] >= 90:
-                                print(recog_data[0][i])
-                                framecnt = 0
-                                toggle = 0
-                                text_alert(recog_data[0][i])
-                                return recog_data[0][i]
-                            else:
-                                framecnt=framecnt+1
-                                print(framecnt)
-                        if framecnt == 25:
+    pir_sensor = 38
+    led = 40
+    while True:
+        key = cv2.waitKey(1) & 0xFF
+        _,frame = vs.read();
+        if key == ord("k"):
+            print("Motion Detected! Detecting Face....")
+            toggle = 1
+        if toggle == 1:
+        #u can certainly add a roi here but for the sake of a demo i'll just leave it as simple as this
+            rects, landmarks = face_detect.detect_face(frame,80);#min face size is set to 80x80
+            aligns = []
+            positions = []
+            if len(rects) == 0:
+                print("No Face Detected")
+                toggle = 0
+            else:
+                print("Recognizing Face...")
+                for (i, rect) in enumerate(rects):
+                    aligned_face, face_pos = aligner.align(160,frame,landmarks[:,i])
+                    if len(aligned_face) == 160 and len(aligned_face[0]) == 160:
+                        aligns.append(aligned_face)
+                        positions.append(face_pos)
+                    else:
+                        print("Align face failed") #log
+                if(len(aligns) > 0):
+                    features_arr = extract_feature.get_features(aligns)
+                    recog_data = findPeople(features_arr,positions)
+                    for (i,rect) in enumerate(rects):
+                        if len(recog_data) > 1:
+                            print("More than one person")
+                            framecnt = 0
                             toggle = 0
-                            print("Unknown face!")
-                            text_alert("Unknown")
-                            return("Unknown")
-            cv2.imshow("Frame",frame)
-            if key == ord("q"):
-                break
-    else:
-        print("Camera doesn't work")
+                            text_alert("more than one person")
+                            return "More than one person"
+                        elif recog_data[0][1] >= 90:
+                            print(recog_data[0][i])
+                            framecnt = 0
+                            toggle = 0
+                            text_alert(recog_data[0][i])
+                            return recog_data[0][i]
+                        else:
+                            framecnt=framecnt+1
+                            print(framecnt)
+                    if framecnt == 25:
+                        toggle = 0
+                        print("Unknown face!")
+                        text_alert("a stranger")
+                        return("Unknown")
+        cv2.imshow("Frame",frame)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
+            break
 '''
 facerec_128D.txt Data Structure:
 {
@@ -113,7 +110,7 @@ facerec_128D.txt Data Structure:
 This function basically does a simple linear search for
 ^the 128D vector with the min distance to the 128D vector of the face on screen
 '''
-def findPeople(features_arr, positions, thres = 0.6, percent_thres = 85):
+def findPeople(features_arr, positions, thres = 0.6, percent_thres = 70):
     '''
     :param features_arr: a list of 128d Features of all faces on screen
     :param positions: a list of face position types of all faces on screen
@@ -137,7 +134,7 @@ def findPeople(features_arr, positions, thres = 0.6, percent_thres = 85):
         if percentage <= percent_thres :
             result = "Unknown"
         returnRes.append((result,percentage))
-    return returnRes    
+    return returnRes
 
 '''
 Description:
@@ -152,7 +149,6 @@ User input his/her name or ID -> Images from Video Capture -> detect the face ->
 '''
 def create_manual_data():
     vs = cv2.VideoCapture(0); #get input from webcam
-
     print("Please input new user ID:")
     new_name = input(); #ez python input()
     f = open('./facerec_128D.txt','r');
@@ -162,7 +158,7 @@ def create_manual_data():
     print("Please start turning slowly. Press 'q' to save and add this new user to the dataset");
     while True:
         _, frame = vs.read();
-        rects, landmarks = face_detect.detect_face(frame, 85);  # min face size is set to 80x80
+        rects, landmarks = face_detect.detect_face(frame, 80);  # min face size is set to 80x80
         for (i, rect) in enumerate(rects):
             aligned_frame, pos = aligner.align(160,frame,landmarks[:,i]);
             if len(aligned_frame) == 160 and len(aligned_frame[0]) == 160:
@@ -182,6 +178,7 @@ def text_alert(whoisit):
     report = {}
     report["value1"] = whoisit
     requests.post("https://maker.ifttt.com/trigger/motion_detected/with/key/oOZxJ6O6nLgtIm6l2iwGD1j85_81X95kYsTMJM0Z-bW", data=report)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
