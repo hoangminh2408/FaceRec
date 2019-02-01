@@ -1,6 +1,5 @@
 # FaceRec
-A simple working facial recognition program.
-
+A simple working facial recognition program. Forked from vudung45. This version was modified for a Smart Doorbell project using the Raspberry Pi. 
 
 ## Installation:
     1. Install the dependencies
